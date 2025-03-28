@@ -25,22 +25,26 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     _controller.forward();
 
-    _controller.addStatusListener((status) async {
-      if (status == AnimationStatus.completed) {
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+    // Verificar si el usuario ya ha iniciado sesión
+    _checkLoginStatus();
+  }
 
-        if (isLoggedIn) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => HomePage()),
-          );
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => LoginPage()),
-          );
-        }
+  Future<void> _checkLoginStatus() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+
+    // Redirigir según el estado de inicio de sesión
+    Future.delayed(const Duration(seconds: 2), () {
+      if (isLoggedIn) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomePage()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+        );
       }
     });
   }
@@ -55,11 +59,14 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: FadeTransition(
-          opacity: _animation,
-          child: Image.asset(
-            'assets/images/logo.png', // Ruta de la imagen en assets
-            height: 250,
+        child: Hero(
+          tag: 'logo', // Identificador único para la animación Hero
+          child: FadeTransition(
+            opacity: _animation,
+            child: Image.asset(
+              'assets/images/logos/LOGOLIGALEMC.png', // Ruta del logo en assets
+              height: 250,
+            ),
           ),
         ),
       ),

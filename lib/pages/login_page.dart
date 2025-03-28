@@ -1,6 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:my_first_real_app/utils/db.dart';
+import 'package:http/http.dart' as http;
 import 'package:my_first_real_app/pages/home_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -13,7 +14,6 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
-  final String dummyPassword = 'tester';
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -39,7 +39,6 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
 
     _controller.forward();
 
-    // Request focus on the email field when the screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _emailFocusNode.requestFocus();
     });
@@ -51,46 +50,75 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     super.dispose();
   }
 
-  void _login() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
+  Future<Map<String, dynamic>?> loginUser(String email, String password) async {
+    final url = Uri.parse('https://dev-lemc.onrender.com/login'); // Cambia la URL por la de tu servidor
 
-      // Simulate a login delay
-      await Future.delayed(Duration(seconds: 2));
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'username': email, // Cambia 'username' si tu servidor espera otro campo
+          'password': password,
+        }),
+      );
 
-      // Validate email and password
-      if (usersData.containsKey(_emailController.text) && _passwordController.text == dummyPassword) {
-        // Save login state
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('isLoggedIn', true);
-        userType = usersData[_emailController.text]!;
-        await prefs.setString('userType', userType);
-
-        setState(() {
-          _isLoading = false;
-        });
-
-        // Navigate to home page
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => HomePage(),
-          ),
-        );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print(data);
+        return data; // Devuelve los datos completos de la respuesta
       } else {
-        setState(() {
-          _isLoading = false;
-        });
-
-        // Show error message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Correo o contraseña incorrectos')),
-        );
+        return null;
       }
+    } catch (e) {
+      print('Error: $e');
+      return null;
     }
   }
+
+  void _login() async {
+  if (_formKey.currentState!.validate()) {
+    setState(() {
+      _isLoading = true;
+    });
+
+    // Llamar a la función para validar las credenciales
+    final response = await loginUser(_emailController.text, _passwordController.text);
+
+    if (response != null) {
+      // Guardar los valores de la respuesta en SharedPreferences
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isLoggedIn', true);
+      await prefs.setInt('id_jugador', response['id_jugador']); // Guardar el id_jugador
+      await prefs.setInt('user_type', response['user_type']); // Guardar el tipo de usuario
+
+      print('ID Jugador guardado: ${response['id_jugador']}'); // Verificar que se guarda correctamente
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      // Navegar a la página principal
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => HomePage(),
+        ),
+      );
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
+
+      // Mostrar mensaje de error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Correo o contraseña incorrectos')),
+      );
+    }
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -111,7 +139,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Image.asset(
-                      'assets/images/logo.png', // Ruta de la imagen en assets
+                      'assets/images/logos/LOGOLIGALEMC.png',
                       height: 250,
                     ),
                     const SizedBox(height: 20),
