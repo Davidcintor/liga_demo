@@ -36,6 +36,23 @@ final Map<String, String> teamImages = {
   '16': 'assets/images/logos/LaSantaGaming.png',
 };
 
+Future<List<Map<String, dynamic>>?> fetchRawMatches() async {
+  final url = Uri.parse('https://dev-lemc.onrender.com/partidos');
+  try {
+    final response = await http.get(url);
+    if (response.statusCode == 200) {
+      // Decodificar la respuesta como una lista de mapas
+      return List<Map<String, dynamic>>.from(json.decode(response.body));
+    } else {
+      throw Exception('Error al cargar los partidos: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('Error al cargar los partidos: $e');
+    return null;
+  }
+}
+
+
 Future<Map<String, dynamic>?> loadPlayerById(int idJugador) async {
   final url = Uri.parse('https://dev-lemc.onrender.com/jugadores/estadisticas/$idJugador');
   try {

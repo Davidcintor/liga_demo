@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:my_first_real_app/utils/db.dart'; // Importar db.dart para acceder a las variables globales
 
-class PlayerDetailPage extends StatelessWidget {
+class PlayerDetailPage extends StatefulWidget {
   final String playerId; // ID del jugador
   final String userType;
   final String teamId; // ID del equipo
@@ -12,6 +12,13 @@ class PlayerDetailPage extends StatelessWidget {
     required this.teamId,
   });
 
+  @override
+  _PlayerDetailPageState createState() => _PlayerDetailPageState();
+}
+
+class _PlayerDetailPageState extends State<PlayerDetailPage> {
+  bool _isExpanded = false; // Controlar el estado de expansión
+
   void _navigateToTeamPage(BuildContext context, String teamName) {
     // Navegar a la página del equipo
     Navigator.pushNamed(context, '/teams', arguments: {'teamName': teamName});
@@ -20,13 +27,13 @@ class PlayerDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Obtener los datos del jugador desde la base de datos global
-    final player = globalPlayersByTeam[teamId]?.firstWhere(
-      (p) => p['id_jugador'].toString() == playerId,
+    final player = globalPlayersByTeam[widget.teamId]?.firstWhere(
+      (p) => p['id_jugador'].toString() == widget.playerId,
       orElse: () => {},
     );
 
     final team = globalTeams.firstWhere(
-      (team) => team['id_equipo'] == teamId,
+      (team) => team['id_equipo'].toString() == widget.teamId,
       orElse: () => {'Nombre_Equipo': 'No disponible', 'image': 'assets/images/logos/default.png'},
     );
 
@@ -50,7 +57,6 @@ class PlayerDetailPage extends StatelessWidget {
       appBar: AppBar(
         title: Text('Perfil'),
         centerTitle: true,
-        
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -63,7 +69,7 @@ class PlayerDetailPage extends StatelessWidget {
               children: [
                 // Foto de portada (logo del equipo desvanecido)
                 Hero(
-                  tag: 'teamLogo-$teamId', // Etiqueta única para la animación
+                  tag: 'teamLogo-${widget.teamId}', // Etiqueta única para la animación
                   child: Opacity(
                     opacity: 0.2, // Nivel de desvanecimiento
                     child: Image.asset(
@@ -102,12 +108,12 @@ class PlayerDetailPage extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (player['plataforma'] != null && player['plataforma']!.isNotEmpty)
-                   Image.asset(
-                     'assets/images/logos/${player['plataforma']}.png', // Ruta del logo de la plataforma
-                     width: screenWidth * 0.05,
-                     height: screenWidth * 0.05,
-                     fit: BoxFit.contain,
-                   ),
+                  Image.asset(
+                    'assets/images/logos/${player['plataforma']}.png', // Ruta del logo de la plataforma
+                    width: screenWidth * 0.05,
+                    height: screenWidth * 0.05,
+                    fit: BoxFit.contain,
+                  ),
                 SizedBox(width: screenWidth * 0.02),
                 Text(
                   player['plataforma'] ?? 'No disponible',
@@ -122,7 +128,7 @@ class PlayerDetailPage extends StatelessWidget {
               style: TextStyle(fontSize: screenWidth * 0.045, color: Colors.grey[600]),
             ),
             SizedBox(height: screenWidth * 0.02),
-            // Edad del jugador
+            // País del jugador
             Text(
               'País: ${player['pais']?.toString() ?? 'No disponible'}',
               style: TextStyle(fontSize: screenWidth * 0.045, color: Colors.grey[600]),
@@ -137,42 +143,113 @@ class PlayerDetailPage extends StatelessWidget {
                   style: TextStyle(fontSize: screenWidth * 0.045, color: Colors.grey[600]),
                 ),
                 GestureDetector(
-                  onTap: () => _navigateToTeamPage(
-                    context,
-                    team['Nombre_Equipo'],
-                  ),
-                  child: Text(
-                    team['Nombre_Equipo'],
-                    style: TextStyle(fontSize: screenWidth * 0.045, color: Colors.blue, decoration: TextDecoration.underline),
-                  ),
-                ),
+      onTap: () => _navigateToTeamPage(
+        context,
+        team['Nombre_Equipo'] ?? 'No disponible',
+      ),
+      child: Text(
+        team['Nombre_Equipo'] ?? 'No disponible',
+        style: TextStyle(
+          fontSize: screenWidth * 0.045,
+          color: Colors.blue,
+          decoration: TextDecoration.underline,
+        ),
+      ),
+    ),
               ],
             ),
-            SizedBox(height: screenWidth * 0.04),
+            SizedBox(height: screenWidth * 0.02),
+
             Divider(),
-            // Redes sociales
-            Text(
-              'Redes Sociales:',
-              style: TextStyle(fontSize: screenWidth * 0.05, fontWeight: FontWeight.bold),
+            SizedBox(height: screenWidth * 0.02),
+            // Estadísticas del jugador con expansión
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _isExpanded = !_isExpanded; // Alternar el estado de expansión
+                });
+              },
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Estadísticas del Jugador',
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.045,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                  Icon(
+                    _isExpanded ? Icons.arrow_drop_up : Icons.arrow_drop_down,
+                    color: Colors.grey[800],
+                  ),
+                ],
+              ),
             ),
-            if (player['facebook'] != null && player['facebook']!.isNotEmpty)
-              ListTile(
-                leading: Image.network('https://cdn-icons-png.flaticon.com/512/733/733547.png', width: screenWidth * 0.08), // Facebook logo
-                title: Text(player['facebook']),
+            if (_isExpanded)
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.15),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    _buildStatRow('Apariciones', player['apariciones']?.toString() ?? '0', screenWidth),
+                    Divider(color: Colors.grey[400]),
+                    _buildStatRow('Goles', player['goles']?.toString() ?? '0', screenWidth),
+                    Divider(color: Colors.grey[400]),
+                    _buildStatRow('Asistencias', player['asistencias']?.toString() ?? '0', screenWidth),
+                    Divider(color: Colors.grey[400]),
+                    _buildStatRow('Tiros', player['tiros']?.toString() ?? '0', screenWidth),
+                    Divider(color: Colors.grey[400]),
+                    _buildStatRow('Precisión de Tiros', '${player['precision_tiros']?.toString() ?? '0'}%', screenWidth),
+                    Divider(color: Colors.grey[400]),
+                    _buildStatRow('Pases', player['pases']?.toString() ?? '0', screenWidth),
+                    Divider(color: Colors.grey[400]),
+                    _buildStatRow('Precisión de Pases', '${player['precision_pases']?.toString() ?? '0'}%', screenWidth),
+                    Divider(color: Colors.grey[400]),
+                    _buildStatRow('Regates', player['regates']?.toString() ?? '0', screenWidth),
+                    Divider(color: Colors.grey[400]),
+                    _buildStatRow('Precisión de Regates', '${player['precision_regates']?.toString() ?? '0'}%', screenWidth),
+                    Divider(color: Colors.grey[400]),
+                    _buildStatRow('Entradas', player['entradas']?.toString() ?? '0', screenWidth),
+                    Divider(color: Colors.grey[400]),
+                    _buildStatRow('Precisión de Entradas', '${player['precision_entradas']?.toString() ?? '0'}%', screenWidth),
+                    Divider(color: Colors.grey[400]),
+                    _buildStatRow('Tarjetas Amarillas', player['tarjetas_amarillas']?.toString() ?? '0', screenWidth),
+                    Divider(color: Colors.grey[400]),
+                    _buildStatRow('Tarjetas Rojas', player['tarjetas_rojas']?.toString() ?? '0', screenWidth),
+                  ],
+                ),
               ),
-            if (player['instagram'] != null && player['instagram']!.isNotEmpty)
-              ListTile(
-                leading: Image.network('https://cdn-icons-png.flaticon.com/512/2111/2111463.png', width: screenWidth * 0.08), // Instagram logo
-                title: Text(player['instagram']),
-              ),
-            if (player['twitch'] != null && player['twitch']!.isNotEmpty)
-              ListTile(
-                leading: Image.network('https://cdn-icons-png.flaticon.com/512/2111/2111668.png', width: screenWidth * 0.08), // Twitch logo
-                title: Text(player['twitch']),
-              ),
-            SizedBox(height: screenWidth * 0.05),
+            SizedBox(height: screenWidth * 0.04),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatRow(String title, String value, double screenWidth) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: screenWidth * 0.01),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: screenWidth * 0.045,
+              color: Colors.grey[700],
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: screenWidth * 0.045,
+              fontWeight: FontWeight.bold,
+              color: Colors.blue,
+            ),
+          ),
+        ],
       ),
     );
   }

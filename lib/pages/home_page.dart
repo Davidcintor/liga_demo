@@ -134,7 +134,7 @@ class WelcomeWidget extends StatelessWidget {
         children: [
           // Logo de la aplicación
           Divider(),
-          SizedBox(height: screenHeight * 0.05), // Espaciado dinámico
+          SizedBox(height: screenHeight * 0.0), // Espaciado dinámico
           // Texto de bienvenida
           Text(
             '¡Bienvenido, ${user?['nombre'] ?? 'Usuario'}!', // Mostrar el nombre del usuario

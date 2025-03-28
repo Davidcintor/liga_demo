@@ -60,8 +60,9 @@ class _PlayersPageState extends State<PlayersPage> {
         title: Text('Equipo'),
         centerTitle: true,
       ),
-// Mostrar indicador de carga mientras se obtienen los datos
-body          : SingleChildScrollView(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator()) // Mostrar indicador de carga mientras se obtienen los datos
+          : SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [

@@ -300,7 +300,6 @@ class _UserPageState extends State<UserPage> {
                                     fontSize: 15,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.blue,
-                                    decoration: TextDecoration.underline,
                                   ),
                                 ),
                                 Icon(
@@ -343,8 +342,8 @@ class _UserPageState extends State<UserPage> {
                                   // Formatear el valor
                                   final value = isPercentage
                                       ? '${entry.value}%' 
-                                      : '${entry.value}';
-
+                                      : '${entry.value} .';
+ 
                                   return Column(
                                     children: [
                                       Padding(
